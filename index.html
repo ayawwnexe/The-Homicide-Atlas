@@ -160,7 +160,6 @@ footer{border-top:1px solid var(--line);max-width:1180px;margin:auto;padding:25p
   <div class="navlinks">
     <a href="#" onclick="goHome();return false">Archive</a>
     <a href="#" onclick="goAbout();return false">About</a>
-    <a href="#" onclick="goAdmin();return false">Admin</a>
   </div>
 </nav>
 </header>
@@ -242,7 +241,7 @@ function goAdmin(){
 
 window.onpopstate=()=>{
  if(location.hash==="#about")renderAbout();
- else if(location.hash==="#admin")renderHome();
+ else if(location.hash==="#admin")renderAdmin();
  else if(location.hash.startsWith("#case-"))openCase(location.hash.replace("#case-",""));
  else renderHome();
 };
@@ -251,8 +250,12 @@ async function init(){
  if(!CONFIG.supabaseUrl||!CONFIG.supabaseKey||
     CONFIG.supabaseUrl.includes("YOUR_")||
     CONFIG.supabaseKey.includes("YOUR_")){
-  document.getElementById("case-grid").innerHTML='<div class="empty">Supabase configuration is missing. Check config.js.</div>';
-  document.getElementById("case-count").textContent="Configuration needed";
+  if(location.hash==="#admin") {
+   document.getElementById("app").innerHTML='<section class="admin-wrap"><div class="eyebrow">Restricted access</div><h1>Archive administration</h1><div class="notice">Supabase configuration is missing. Check config.js.</div></section>';
+  } else {
+   document.getElementById("case-grid").innerHTML='<div class="empty">Supabase configuration is missing. Check config.js.</div>';
+   document.getElementById("case-count").textContent="Configuration needed";
+  }
   return;
  }
 
@@ -260,9 +263,9 @@ async function init(){
   db=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseKey);
   await loadCases();
 
-  // Public homepage is ALWAYS the default route.
-  // A stale #admin URL will not open the admin panel.
-  if(location.hash==="#about")renderAbout();
+  // Route directly to the requested page, including the unlisted admin URL.
+  if(location.hash==="#admin")renderAdmin();
+  else if(location.hash==="#about")renderAbout();
   else if(location.hash.startsWith("#case-"))openCase(location.hash.replace("#case-",""));
   else{
    history.replaceState({page:"home"},"",location.pathname);
