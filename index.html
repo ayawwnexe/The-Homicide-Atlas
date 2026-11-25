@@ -256,7 +256,7 @@ async function init(){
  if(!CONFIG.supabaseUrl||!CONFIG.supabaseKey||
     CONFIG.supabaseUrl.includes("YOUR_")||
     CONFIG.supabaseKey.includes("YOUR_")){
-  if(location.hash==="#admin") {
+  if(isAdminRoute()) {
    document.getElementById("app").innerHTML='<section class="admin-wrap"><div class="eyebrow">Restricted access</div><h1>Archive administration</h1><div class="notice">Supabase configuration is missing. Check config.js.</div></section>';
   } else {
    document.getElementById("case-grid").innerHTML='<div class="empty">Supabase configuration is missing. Check config.js.</div>';
@@ -267,16 +267,28 @@ async function init(){
 
  try{
   db=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseKey);
-  await loadCases();
 
-  // Route directly to the requested page, including the unlisted admin URL.
-  if(isAdminRoute())renderAdmin();
-  else if(location.hash==="#about")renderAbout();
-  else if(location.hash.startsWith("#case-"))openCase(location.hash.replace("#case-",""));
-  else{
-   history.replaceState({page:"home"},"",location.pathname);
-   renderHome();
+  // Admin login must not depend on the public archive query succeeding.
+  // This lets the admin route open even if public case loading is blocked.
+  if(isAdminRoute()){
+   renderAdmin();
+   return;
   }
+
+  if(location.hash==="#about"){
+   renderAbout();
+   return;
+  }
+
+  if(location.hash.startsWith("#case-")){
+   await loadCases();
+   openCase(location.hash.replace("#case-",""));
+   return;
+  }
+
+  await loadCases();
+  history.replaceState({page:"home"},"",location.pathname);
+  renderHome();
  }catch(error){
   console.error(error);
   toast("Could not connect to the archive.");
